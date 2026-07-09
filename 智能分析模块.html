@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智能分析 · 月度经营分析</title>
+<style>
+:root {
+  --bg-card:        rgba(16,20,42,0.78);
+  --border-card:    rgba(255,255,255,0.07);
+  --text-primary:   #e8edf5;
+  --text-secondary: #a8afc4;
+  --text-muted:     #646b88;
+  --accent-blue:    #4d94f0;
+  --accent-cyan:    #2eb8a6;
+  --accent-green:   #3cba6c;
+  --accent-orange:  #f0a040;
+  --accent-red:     #e85555;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.dashboard {
+  width: 949px; height: 360px;
+  font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: linear-gradient(160deg, #0b0e1e 0%, #10152a 30%, #0d1135 60%, #0a0e24 100%);
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  padding: 8px 14px 10px 14px;
+  gap: 4px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  position: relative;
+}
+.dashboard::before {
+  content: ''; position: absolute; inset: 0; opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  pointer-events: none; border-radius: 6px;
+}
+
+/* Header */
+.header-row {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; position: relative; z-index: 1;
+  padding: 0 2px;
+}
+.header-left { display: flex; align-items: center; gap: 10px; }
+.header-icon {
+  width: 28px; height: 28px; border-radius: 6px;
+  background: linear-gradient(135deg, var(--accent-blue), #3670d0);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0;
+}
+.header-title { font-size: 19px; font-weight: 700; letter-spacing: 0.03em; }
+.header-subtitle { font-size: 14px; color: var(--text-muted); margin-left: 2px; font-weight: 400; }
+.header-right { display: flex; align-items: center; gap: 8px; }
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent-green);
+  box-shadow: 0 0 8px rgba(60,186,108,0.5);
+}
+.time-badge {
+  font-size: 13px; color: var(--text-muted);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  padding: 3px 10px; border-radius: 4px;
+}
+
+/* Section rows */
+.section-row {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 5px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: visible;
+  backdrop-filter: blur(8px);
+  flex: 1;
+  min-height: 0;
+}
+.section-row::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 10px; bottom: 10px;
+  width: 3px; border-radius: 0 2px 2px 0;
+}
+.section-row.accent-blue::before   { background: linear-gradient(180deg, var(--accent-blue), rgba(77,148,240,0.3)); }
+
+/* highlight */
+.section-row.highlight {
+  border-color: rgba(77,148,240,0.18);
+  background: linear-gradient(180deg, rgba(77,148,240,0.05) 0%, var(--bg-card) 30%);
+}
+.section-row.highlight::after {
+  content: '';
+  position: absolute;
+  right: -20px; top: -10px;
+  width: 60px; height: 50px;
+  background: radial-gradient(circle, rgba(77,148,240,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.row-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  position: relative; z-index: 1;
+}
+
+.row-icon {
+  width: 24px; height: 24px; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; flex-shrink: 0;
+  background: rgba(77,148,240,0.15);
+}
+
+.row-title {
+  font-size: 16px; font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--accent-blue);
+  position: relative; z-index: 1;
+}
+
+.row-desc {
+  font-size: 15px; color: #ffffff;
+  line-height: 1.65;
+  flex: 1;
+  min-width: 0;
+  position: relative; z-index: 1;
+}
+
+.table-view { display: none; }
+</style>
+</head>
+<body style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#060812;">
+
+<div class="dashboard">
+
+  <!-- Header -->
+  <div class="header-row">
+    <div class="header-left">
+      <div class="header-icon">📊</div>
+      <span class="header-title">智能分析</span>
+      <span class="header-subtitle">· 月度经营分析</span>
+    </div>
+    <div class="header-right">
+      <span class="status-dot"></span>
+      <span class="time-badge">2026年6月</span>
+    </div>
+  </div>
+
+  <!-- 1. 量质构效能分析 — highlighted -->
+  <div class="section-row accent-blue highlight" style="flex:1.2">
+    <div class="row-header">
+      <div class="row-icon">📋</div>
+      <div class="row-title">量质构效能分析</div>
+    </div>
+    <div class="row-desc">全省8项重点指标中，7项已完成月度目标，1项未达标。未达标指标主要集中在"客"维度（个人客户群规模）；3项能力建设中，7项已完成月目标进度，20项基本完成，7项月完成进度差异较大，主要集中在项目抢拓攻坚和项目质效攻坚等方面。</div>
+  </div>
+
+  <!-- 2. 业务条线分析 -->
+  <div class="section-row accent-blue">
+    <div class="row-header">
+      <div class="row-icon">📌</div>
+      <div class="row-title">业务条线分析</div>
+    </div>
+    <div class="row-desc">围绕政企、网络、市场、财务业务条线，分析指标月度达标情况，市场条线指标达成和能力建设月度完成情况良好，需重点关注市场条线和政企条线。</div>
+  </div>
+
+  <!-- 3. 地市分析 -->
+  <div class="section-row accent-blue">
+    <div class="row-header">
+      <div class="row-icon">📍</div>
+      <div class="row-title">地市分析</div>
+    </div>
+    <div class="row-desc">综合分析量质构效能和业务条线整体分析月度完成情况发现和平区、沈河区、大东区整体完成情况良好，浑南区、辽中区指标进展尚可但基础能力有差距，法库县、新民市为重点帮扶区，能力和进展均需提升。</div>
+  </div>
+
+  <table class="table-view" aria-label="智能分析数据表">
+    <thead><tr><th>维度</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td>量质构效能分析</td><td>全省8项重点指标中，7项已完成月度目标，1项未达标。未达标指标主要集中在"客"维度（个人客户群规模）；3项能力建设中，7项已完成月目标进度，20项基本完成，7项月完成进度差异较大，主要集中在项目抢拓攻坚和项目质效攻坚等方面。</td></tr>
+      <tr><td>业务条线分析</td><td>围绕政企、网络、市场、财务业务条线，分析指标月度达标情况，市场条线指标达成和能力建设月度完成情况良好，需重点关注市场条线和政企条线。</td></tr>
+      <tr><td>地市分析</td><td>综合分析量质构效能和业务条线整体分析月度完成情况发现和平区、沈河区、大东区整体完成情况良好，浑南区、辽中区指标进展尚可但基础能力有差距，法库县、新民市为重点帮扶区，能力和进展均需提升。</td></tr>
+    </tbody>
+  </table>
+
+</div>
+
+</body>
+</html>

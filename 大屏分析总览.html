@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大屏分析总览</title>
+<style>
+:root {
+  --bg: #091B41;
+  --bg-card: rgba(13,28,60,0.92);
+  --border-card: rgba(255,255,255,0.06);
+  --text-primary: #edf0f8;
+  --text-secondary: #bcc3d8;
+  --text-muted: #8890b8;
+  --accent-blue: #5b9ef5;
+  --accent-green: #4cc97a;
+  --accent-orange: #f0a848;
+  --accent-red: #e86060;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: #050d1f;
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+.dashboard {
+  width: 100vw; height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg);
+}
+
+/* ===== Panel ===== */
+.panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 6px;
+  padding: 14px 18px;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-shrink: 0; margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.panel-title {
+  font-size: 16px; font-weight: 700;
+  color: var(--text-primary);
+  display: flex; align-items: center; gap: 10px;
+  letter-spacing: 0.04em;
+}
+.panel-title::before {
+  content: '';
+  display: block;
+  width: 4px; height: 18px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--accent-blue), rgba(91,158,245,0.4));
+  box-shadow: 0 0 8px rgba(91,158,245,0.35);
+}
+.panel-subtitle {
+  font-size: 11px; color: var(--text-muted);
+  letter-spacing: 0.03em;
+  display: flex; align-items: center; gap: 10px;
+}
+.panel-subtitle > span:last-child {
+  background: rgba(255,255,255,0.02);
+  padding: 3px 10px; border-radius: 3px;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+.panel-body {
+  flex: 1; min-height: 0;
+  position: relative;
+}
+
+/* ===== Quadrant Chart ===== */
+.quadrant-chart { width: 100%; height: 100%; position: relative; }
+.quadrant-chart svg { width: 100%; height: 100%; }
+
+/* ===== Smart Analysis ===== */
+.smart-section {
+  flex: 1;
+  display: flex; flex-direction: column;
+  gap: 5px;
+  overflow: hidden;
+}
+.smart-row {
+  background: rgba(16,22,45,0.85);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 5px;
+  padding: 10px 14px;
+  display: flex; flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(8px);
+}
+.smart-row::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 10px; bottom: 10px;
+  width: 3px; border-radius: 0 2px 2px 0;
+  background: linear-gradient(180deg, var(--accent-blue), rgba(91,158,245,0.25));
+}
+.smart-row.highlight {
+  border-color: rgba(91,158,245,0.18);
+  background: linear-gradient(180deg, rgba(91,158,245,0.05) 0%, rgba(16,22,45,0.85) 30%);
+}
+.smart-row.highlight::after {
+  content: '';
+  position: absolute;
+  right: -20px; top: -10px;
+  width: 60px; height: 50px;
+  background: radial-gradient(circle, rgba(91,158,245,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+.smart-row .smart-header {
+  display: flex; align-items: center; gap: 8px;
+  position: relative; z-index: 1;
+}
+.smart-row .smart-icon {
+  width: 22px; height: 22px; border-radius: 5px;
+  background: rgba(91,158,245,0.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; flex-shrink: 0;
+}
+.smart-row .smart-title {
+  font-size: 15px; font-weight: 700;
+  color: var(--accent-blue);
+  letter-spacing: 0.02em;
+}
+.smart-row .smart-body {
+  font-size: 13.5px; color: #ffffff;
+  line-height: 1.65;
+  position: relative; z-index: 1;
+}
+
+/* ===== Shortcut ===== */
+.shortcut-groups {
+  display: flex; flex-direction: column;
+  gap: 20px; flex: 1;
+}
+.shortcut-group-title {
+  font-size: 13px; font-weight: 700;
+  color: var(--text-secondary);
+  margin-bottom: 10px; padding-left: 9px;
+  border-left: 3px solid var(--accent-blue);
+}
+.shortcut-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+.shortcut-item {
+  background: rgba(255,255,255,0.015);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 4px;
+  padding: 14px 8px 12px;
+  text-align: center;
+  cursor: default;
+  transition: background 0.15s, border-color 0.15s;
+}
+.shortcut-item.clickable {
+  cursor: pointer;
+  border-left: 3px solid var(--accent-blue);
+}
+.shortcut-item.clickable:hover {
+  background: rgba(91,158,245,0.08);
+  border-color: rgba(91,158,245,0.2);
+}
+.shortcut-item .s-label {
+  font-size: 12px; color: var(--text-muted);
+  margin-bottom: 5px; letter-spacing: 0.03em;
+}
+.shortcut-item .s-value {
+  font-size: 24px; font-weight: 700; color: #fff;
+}
+.shortcut-item .s-bar {
+  height: 3px; border-radius: 2px;
+  margin-top: 8px;
+  background: rgba(255,255,255,0.05);
+  overflow: hidden;
+}
+.shortcut-item .s-bar-fill { height: 100%; border-radius: 1px; }
+
+/* ===== Modal ===== */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(3px);
+}
+.modal-overlay.hidden { display: none; }
+.modal-box {
+  background: var(--bg-card);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 24px 28px;
+  min-width: 440px;
+  max-width: 520px;
+}
+.modal-title {
+  font-size: 16px; font-weight: 700;
+  color: var(--accent-blue);
+  margin-bottom: 18px;
+  display: flex; align-items: center; gap: 8px;
+}
+.modal-table { width: 100%; border-collapse: collapse; }
+.modal-table th {
+  text-align: left; font-size: 12px;
+  color: var(--text-muted);
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  font-weight: 500;
+}
+.modal-table td {
+  font-size: 14px; color: var(--text-primary);
+  padding: 11px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.modal-table .rate-low { color: var(--accent-red); font-weight: 700; }
+.modal-table .rate-mid { color: var(--accent-orange); font-weight: 700; }
+.modal-table .rate-good { color: var(--accent-green); font-weight: 700; }
+.modal-close { margin-top: 18px; text-align: right; }
+.modal-close button {
+  background: rgba(91,158,245,0.12);
+  border: 1px solid rgba(91,158,245,0.2);
+  color: var(--accent-blue); padding: 6px 22px; border-radius: 4px;
+  cursor: pointer; font-size: 13px; font-weight: 600;
+  transition: background 0.15s;
+}
+.modal-close button:hover { background: rgba(91,158,245,0.22); }
+
+/* ===== City indicator in header ===== */
+.city-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600;
+  color: #fff;
+  background: rgba(91,158,245,0.12);
+  padding: 4px 10px; border-radius: 4px;
+  border: 1px solid rgba(91,158,245,0.25);
+  letter-spacing: 0.03em;
+}
+.city-tag .back-link {
+  color: var(--accent-blue);
+  cursor: pointer;
+  font-size: 11px;
+  margin-left: 2px;
+  transition: opacity 0.15s;
+}
+.city-tag .back-link:hover { opacity: 0.8; }
+.city-tag.hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div class="dashboard">
+
+  <!-- ═══════ 左上：经营质效 ═══════ -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">经营质效</div>
+      <div class="panel-subtitle">
+        <span class="city-tag hidden" id="cityTag">沈阳市 <span class="back-link" onclick="goProvince()">← 返回全省</span></span>
+        <span>横轴：目标完成 · 纵轴：路径达成</span>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="quadrant-chart" id="chart1"></div>
+    </div>
+  </div>
+
+  <!-- ═══════ 右上：智能分析 ═══════ -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">智能分析</div>
+      <div class="panel-subtitle"><span></span></div>
+    </div>
+    <div class="panel-body">
+      <div class="smart-section">
+        <div class="smart-row highlight">
+          <div class="smart-header">
+            <div class="smart-icon">📋</div>
+            <div class="smart-title">量质构效能分析</div>
+          </div>
+          <div class="smart-body" id="smartBody1">全省8项重点指标中，7项已完成月度目标，1项未达标。未达标指标主要集中在"客"维度（个人客户群规模）；3项能力建设中，7项已完成月目标进度，20项基本完成，7项月完成进度差异较大，主要集中在项目抢拓攻坚和项目质效攻坚等方面。</div>
+        </div>
+        <div class="smart-row">
+          <div class="smart-header">
+            <div class="smart-icon">📌</div>
+            <div class="smart-title">业务条线分析</div>
+          </div>
+          <div class="smart-body" id="smartBody2">围绕政企、网络、市场、财务业务条线，分析指标月度达标情况，市场条线指标达成和能力建设月度完成情况良好，需重点关注市场条线和政企条线。</div>
+        </div>
+        <div class="smart-row">
+          <div class="smart-header">
+            <div class="smart-icon">📍</div>
+            <div class="smart-title">地市分析</div>
+          </div>
+          <div class="smart-body" id="smartBody3">综合分析量质构效能和业务条线整体分析月度完成情况发现和平区、沈河区、大东区整体完成情况良好，浑南区、辽中区指标进展尚可但基础能力有差距，法库县、新民市为重点帮扶区，能力和进展均需提升。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ 左下：企业管理 ═══════ -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">企业管理</div>
+      <div class="panel-subtitle"><span>横轴：能力建设 · 纵轴：落地执行</span></div>
+    </div>
+    <div class="panel-body">
+      <div class="quadrant-chart" id="chart2"></div>
+    </div>
+  </div>
+
+  <!-- ═══════ 右下：短板指标 ═══════ -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="panel-title">短板指标</div>
+    </div>
+    <div class="panel-body">
+      <div class="shortcut-groups">
+        <div class="shortcut-group">
+          <div class="shortcut-group-title">经营质效</div>
+          <div class="shortcut-grid">
+            <div class="shortcut-item clickable" onclick="openModal()">
+              <div class="s-label">量</div><div class="s-value" id="sv1">44.5%</div>
+              <div class="s-bar"><div class="s-bar-fill" id="sb1" style="width:74%;background:var(--accent-orange)"></div></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="s-label">客</div><div class="s-value" id="sv2">50%</div>
+              <div class="s-bar"><div class="s-bar-fill" id="sb2" style="width:71%;background:var(--accent-orange)"></div></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="s-label">收</div><div class="s-value" id="sv3">50%</div>
+              <div class="s-bar"><div class="s-bar-fill" id="sb3" style="width:63%;background:var(--accent-orange)"></div></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="s-label">质</div><div class="s-value" id="sv4">20%</div>
+              <div class="s-bar"><div class="s-bar-fill" id="sb4" style="width:22%;background:var(--accent-red)"></div></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="s-label">能</div><div class="s-value" id="sv5">50%</div>
+              <div class="s-bar"><div class="s-bar-fill" id="sb5" style="width:63%;background:var(--accent-orange)"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="shortcut-group">
+          <div class="shortcut-group-title">企业管理</div>
+          <div class="shortcut-grid">
+            <div class="shortcut-item">
+              <div class="s-label">市场</div><div class="s-value" id="sv6">50%</div>
+              <div class="s-bar"><div class="s-bar-fill" id="sb6" style="width:71%;background:var(--accent-orange)"></div></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="s-label">网络</div><div class="s-value" id="sv7">44.5%</div>
+              <div class="s-bar"><div class="s-bar-fill" id="sb7" style="width:74%;background:var(--accent-orange)"></div></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="s-label">政企</div><div class="s-value" id="sv8">50%</div>
+              <div class="s-bar"><div class="s-bar-fill" id="sb8" style="width:63%;background:var(--accent-orange)"></div></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="s-label">数智化能力</div><div class="s-value" id="sv9">20%</div>
+              <div class="s-bar"><div class="s-bar-fill" id="sb9" style="width:22%;background:var(--accent-red)"></div></div>
+            </div>
+            <div class="shortcut-item">
+              <div class="s-label">落地执行</div><div class="s-value" id="sv10">50%</div>
+              <div class="s-bar"><div class="s-bar-fill" id="sb10" style="width:63%;background:var(--accent-orange)"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════ Modal ═══════ -->
+<div class="modal-overlay hidden" id="modal">
+  <div class="modal-box">
+    <div class="modal-title">量 — 指标明细</div>
+    <table class="modal-table">
+      <thead><tr><th>指标名称</th><th>当前值</th><th>月度目标</th><th>完成率</th></tr></thead>
+      <tbody>
+        <tr><td>拆弹行动-拆弹客群转化规模（户）</td><td>3256</td><td>5000</td><td class="rate-low">65.1%</td></tr>
+        <tr><td>回家行动-8元卡迁出规模（户）</td><td>1842</td><td>2800</td><td class="rate-mid">65.8%</td></tr>
+        <tr><td>三扩三融客户规模（户）</td><td>4518</td><td>6500</td><td class="rate-mid">69.5%</td></tr>
+      </tbody>
+    </table>
+    <div class="modal-close"><button onclick="closeModal()">关闭</button></div>
+  </div>
+</div>
+
+<script>
+// ===== State =====
+let currentView = 'province'; // 'province' | 'shenyang'
+
+// ===== Data =====
+const pCities1 = [
+  { name:'沈阳',x:0.82,y:0.78,clickable:true },{ name:'大连',x:0.76,y:0.72 },{ name:'鞍山',x:0.55,y:0.58 },
+  { name:'抚顺',x:0.48,y:0.52 },{ name:'本溪',x:0.35,y:0.45 },{ name:'丹东',x:0.42,y:0.38 },
+  { name:'锦州',x:0.52,y:0.42 },{ name:'营口',x:0.50,y:0.46 },{ name:'阜新',x:0.28,y:0.30 },
+  { name:'辽阳',x:0.44,y:0.48 },{ name:'盘锦',x:0.54,y:0.40 },{ name:'铁岭',x:0.32,y:0.35 },
+  { name:'朝阳',x:0.22,y:0.25 },{ name:'葫芦岛',x:0.38,y:0.42 },
+];
+const pCities2 = [
+  { name:'沈阳',x:0.80,y:0.76,clickable:true },{ name:'大连',x:0.74,y:0.70 },{ name:'鞍山',x:0.53,y:0.55 },
+  { name:'抚顺',x:0.46,y:0.50 },{ name:'本溪',x:0.33,y:0.42 },{ name:'丹东',x:0.40,y:0.36 },
+  { name:'锦州',x:0.50,y:0.44 },{ name:'营口',x:0.48,y:0.48 },{ name:'阜新',x:0.26,y:0.28 },
+  { name:'辽阳',x:0.42,y:0.46 },{ name:'盘锦',x:0.52,y:0.42 },{ name:'铁岭',x:0.30,y:0.33 },
+  { name:'朝阳',x:0.20,y:0.22 },{ name:'葫芦岛',x:0.36,y:0.40 },
+];
+// Shenyang districts
+const syCities1 = [
+  { name:'和平区',x:0.82,y:0.80 },{ name:'沈河区',x:0.78,y:0.76 },{ name:'大东区',x:0.74,y:0.72 },
+  { name:'皇姑区',x:0.55,y:0.58 },{ name:'铁西区',x:0.60,y:0.52 },{ name:'浑南区',x:0.50,y:0.46 },
+  { name:'于洪区',x:0.45,y:0.50 },{ name:'沈北新区',x:0.35,y:0.42 },{ name:'苏家屯区',x:0.40,y:0.36 },
+  { name:'辽中区',x:0.48,y:0.40 },{ name:'新民市',x:0.28,y:0.30 },{ name:'法库县',x:0.22,y:0.24 },
+  { name:'康平县',x:0.18,y:0.20 },
+];
+const syCities2 = [
+  { name:'和平区',x:0.80,y:0.78 },{ name:'沈河区',x:0.76,y:0.74 },{ name:'大东区',x:0.72,y:0.70 },
+  { name:'皇姑区',x:0.53,y:0.55 },{ name:'铁西区',x:0.58,y:0.50 },{ name:'浑南区',x:0.48,y:0.48 },
+  { name:'于洪区',x:0.43,y:0.46 },{ name:'沈北新区',x:0.33,y:0.40 },{ name:'苏家屯区',x:0.38,y:0.34 },
+  { name:'辽中区',x:0.46,y:0.42 },{ name:'新民市',x:0.26,y:0.28 },{ name:'法库县',x:0.20,y:0.22 },
+  { name:'康平县',x:0.16,y:0.18 },
+];
+
+// Province shortcut values: [量,客,收,质,能, 市场,网络,政企,数智化,落地执行]
+const pShortcut = [
+  {v:'44.5%',w:74,c:'var(--accent-orange)'},{v:'50%',w:71,c:'var(--accent-orange)'},{v:'50%',w:63,c:'var(--accent-orange)'},
+  {v:'20%',w:22,c:'var(--accent-red)'},{v:'50%',w:63,c:'var(--accent-orange)'},
+  {v:'50%',w:71,c:'var(--accent-orange)'},{v:'44.5%',w:74,c:'var(--accent-orange)'},{v:'50%',w:63,c:'var(--accent-orange)'},
+  {v:'20%',w:22,c:'var(--accent-red)'},{v:'50%',w:63,c:'var(--accent-orange)'},
+];
+// Shenyang shortcut values
+const syShortcut = [
+  {v:'52%',w:74,c:'var(--accent-orange)'},{v:'58%',w:73,c:'var(--accent-orange)'},{v:'47%',w:59,c:'var(--accent-orange)'},
+  {v:'18%',w:20,c:'var(--accent-red)'},{v:'55%',w:69,c:'var(--accent-orange)'},
+  {v:'62%',w:78,c:'var(--accent-green)'},{v:'48%',w:72,c:'var(--accent-orange)'},{v:'45%',w:56,c:'var(--accent-red)'},
+  {v:'22%',w:24,c:'var(--accent-red)'},{v:'53%',w:66,c:'var(--accent-orange)'},
+];
+
+// ===== Render =====
+function renderQuadrant(containerId, cities, xLabel, yLabel) {
+  const container = document.getElementById(containerId);
+  const W = container.clientWidth;
+  const H = container.clientHeight;
+  const pad = { top: 28, right: 30, bottom: 38, left: 42 };
+  const pw = W - pad.left - pad.right;
+  const ph = H - pad.top - pad.bottom;
+
+  const xs = cities.map(c => c.x);
+  const ys = cities.map(c => c.y);
+  const xMin = Math.min(...xs) - 0.06, xMax = Math.max(...xs) + 0.06;
+  const yMin = Math.min(...ys) - 0.06, yMax = Math.max(...ys) + 0.06;
+
+  function sx(v) { return pad.left + ((v - xMin) / (xMax - xMin)) * pw; }
+  function sy(v) { return pad.top + ph - ((v - yMin) / (yMax - yMin)) * ph; }
+
+  let html = `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  const qx = sx(0.5), qy = sy(0.5);
+
+  html += `<rect x="${qx}" y="${pad.top}" width="${pad.left+pw-qx}" height="${qy-pad.top}" fill="rgba(76,201,122,0.04)"/>`;
+  html += `<rect x="${pad.left}" y="${pad.top}" width="${qx-pad.left}" height="${qy-pad.top}" fill="rgba(240,168,72,0.03)"/>`;
+  html += `<rect x="${qx}" y="${qy}" width="${pad.left+pw-qx}" height="${pad.top+ph-qy}" fill="rgba(91,158,245,0.04)"/>`;
+  html += `<rect x="${pad.left}" y="${qy}" width="${qx-pad.left}" height="${pad.top+ph-qy}" fill="rgba(232,96,96,0.03)"/>`;
+
+  html += `<line x1="${qx}" y1="${pad.top}" x2="${qx}" y2="${pad.top+ph}" stroke="rgba(255,255,255,0.10)" stroke-width="1" stroke-dasharray="4,4"/>`;
+  html += `<line x1="${pad.left}" y1="${qy}" x2="${pad.left+pw}" y2="${qy}" stroke="rgba(255,255,255,0.10)" stroke-width="1" stroke-dasharray="4,4"/>`;
+  html += `<line x1="${pad.left}" y1="${pad.top+ph}" x2="${pad.left+pw}" y2="${pad.top+ph}" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>`;
+  html += `<line x1="${pad.left}" y1="${pad.top}" x2="${pad.left}" y2="${pad.top+ph}" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>`;
+
+  for (let v = 0.25; v <= 0.75; v += 0.25) {
+    const tx = sx(v), ty = sy(v);
+    html += `<line x1="${tx}" y1="${pad.top+ph}" x2="${tx}" y2="${pad.top+ph+4}" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>`;
+    html += `<text x="${tx}" y="${pad.top+ph+15}" fill="#8890b8" font-size="10" text-anchor="middle">${Math.round(v*100)}%</text>`;
+    html += `<line x1="${pad.left}" y1="${ty}" x2="${pad.left-4}" y2="${ty}" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>`;
+    html += `<text x="${pad.left-7}" y="${ty+4}" fill="#8890b8" font-size="10" text-anchor="end">${Math.round(v*100)}%</text>`;
+  }
+
+  html += `<text x="${pad.left+pw/2}" y="${pad.top+ph+26}" fill="#8890b8" font-size="11" text-anchor="middle" letter-spacing="0.04em">${xLabel}</text>`;
+  html += `<text x="10" y="${pad.top+ph/2}" fill="#8890b8" font-size="11" text-anchor="middle" letter-spacing="0.04em" transform="rotate(-90,10,${pad.top+ph/2})">${yLabel}</text>`;
+
+  cities.forEach((c, i) => {
+    const cx = sx(c.x), cy = sy(c.y);
+    const color = c.x >= 0.5 && c.y >= 0.5 ? '#4cc97a' :
+                  c.x < 0.5 && c.y >= 0.5 ? '#f0a848' :
+                  c.x >= 0.5 && c.y < 0.5 ? '#5b9ef5' : '#e86060';
+    if (c.clickable) {
+      html += `<g style="cursor:pointer" onclick="goShenyang()">`;
+      html += `<circle cx="${cx}" cy="${cy}" r="12" fill="transparent"/>`;
+      html += `<circle cx="${cx}" cy="${cy}" r="5.5" fill="${color}" opacity="0.95" stroke="#fff" stroke-width="1.5"/>`;
+      html += `<text x="${cx+11}" y="${cy+3.5}" fill="#fff" font-size="10.5" font-weight="600">${c.name}</text>`;
+      html += `</g>`;
+    } else {
+      html += `<circle cx="${cx}" cy="${cy}" r="4.5" fill="${color}" opacity="0.9"/>`;
+      html += `<text x="${cx+10}" y="${cy+3.5}" fill="#bcc3d8" font-size="10" font-weight="500">${c.name}</text>`;
+    }
+  });
+
+  html += `</svg>`;
+  container.innerHTML = html;
+}
+
+// ===== Smart analysis texts =====
+const pSmart = [
+  '全省8项重点指标中，7项已完成月度目标，1项未达标。未达标指标主要集中在"客"维度（个人客户群规模）；3项能力建设中，7项已完成月目标进度，20项基本完成，7项月完成进度差异较大，主要集中在项目抢拓攻坚和项目质效攻坚等方面。',
+  '围绕政企、网络、市场、财务业务条线，分析指标月度达标情况，市场条线指标达成和能力建设月度完成情况良好，需重点关注市场条线和政企条线。',
+  '综合分析量质构效能和业务条线整体分析月度完成情况发现和平区、沈河区、大东区整体完成情况良好，浑南区、辽中区指标进展尚可但基础能力有差距，法库县、新民市为重点帮扶区，能力和进展均需提升。'
+];
+const sySmart = [
+  '沈阳市8项重点指标中，6项已完成月度目标，2项未达标。未达标指标主要集中在"收"维度（叠加态收入贡献）和"质"维度（项目质效）；3项能力建设中，5项已完成月目标进度，18项基本完成，10项月完成进度差异较大，主要集中在项目抢拓攻坚和数智化能力建设等方面。',
+  '围绕政企、网络、市场、财务业务条线分析沈阳市指标月度达标情况，市场条线指标达成情况良好，政企条线能力建设进度滞后，需重点加强政企项目拓展和网络条线落地执行。',
+  '综合分析量质构效能和业务条线整体分析发现和平区、沈河区、大东区整体完成情况良好，浑南区、辽中区指标进展尚可但基础能力有差距，法库县、新民市为重点帮扶区，能力和进展均需提升。'
+];
+
+// ===== View toggle =====
+function goShenyang() {
+  if (currentView === 'shenyang') return;
+  currentView = 'shenyang';
+  document.getElementById('cityTag').classList.remove('hidden');
+
+  renderQuadrant('chart1', syCities1, '目标完成 →', '路径达成 →');
+  renderQuadrant('chart2', syCities2, '能力建设 →', '落地执行 →');
+
+  document.getElementById('smartBody1').textContent = sySmart[0];
+  document.getElementById('smartBody2').textContent = sySmart[1];
+  document.getElementById('smartBody3').textContent = sySmart[2];
+
+  for (let i = 0; i < 10; i++) {
+    document.getElementById('sv' + (i+1)).textContent = syShortcut[i].v;
+    const sb = document.getElementById('sb' + (i+1));
+    sb.style.width = syShortcut[i].w + '%';
+    sb.style.background = syShortcut[i].c;
+  }
+}
+
+function goProvince() {
+  if (currentView === 'province') return;
+  currentView = 'province';
+  document.getElementById('cityTag').classList.add('hidden');
+
+  renderQuadrant('chart1', pCities1, '目标完成 →', '路径达成 →');
+  renderQuadrant('chart2', pCities2, '能力建设 →', '落地执行 →');
+
+  document.getElementById('smartBody1').textContent = pSmart[0];
+  document.getElementById('smartBody2').textContent = pSmart[1];
+  document.getElementById('smartBody3').textContent = pSmart[2];
+
+  for (let i = 0; i < 10; i++) {
+    document.getElementById('sv' + (i+1)).textContent = pShortcut[i].v;
+    const sb = document.getElementById('sb' + (i+1));
+    sb.style.width = pShortcut[i].w + '%';
+    sb.style.background = pShortcut[i].c;
+  }
+}
+
+// ===== Init =====
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    renderQuadrant('chart1', pCities1, '目标完成 →', '路径达成 →');
+    renderQuadrant('chart2', pCities2, '能力建设 →', '落地执行 →');
+  }, 100);
+});
+window.addEventListener('resize', () => {
+  const d1 = currentView === 'province' ? pCities1 : syCities1;
+  const d2 = currentView === 'province' ? pCities2 : syCities2;
+  renderQuadrant('chart1', d1, '目标完成 →', '路径达成 →');
+  renderQuadrant('chart2', d2, '能力建设 →', '落地执行 →');
+});
+
+function openModal() { document.getElementById('modal').classList.remove('hidden'); }
+function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>指标树 · 个人客群规模净增</title>
+<style>
+:root {
+  --bg-card:      rgba(16,20,42,0.85);
+  --border-card:  rgba(255,255,255,0.08);
+  --line:         rgba(255,255,255,0.18);
+  --accent-blue:  #4d94f0;
+  --accent-red:   #e85555;
+  --text-muted:   #7a80a0;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; background: #091B41;
+  font-family: system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+}
+
+.tree {
+  width: 620px; height: 200px;
+  background: #091B41;
+  border-radius: 6px;
+  display: flex;
+  align-items: stretch;
+  padding: 18px 10px 18px 14px;
+  gap: 0;
+  position: relative;
+}
+
+/* ===== Levels ===== */
+.level {
+  display: flex; flex-direction: column;
+  justify-content: center;
+  position: relative; z-index: 1;
+}
+.l1 { flex: 0 0 140px; }
+.l2 { flex: 0 0 120px; gap: 16px; }
+.l3 { flex: 0 0 165px; gap: 6px; }
+
+/* ===== Connector column ===== */
+.conn-col {
+  flex: 0 0 32px;
+  position: relative; z-index: 1;
+}
+
+/* ===== Cards ===== */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-card);
+  border-radius: 4px;
+  padding: 6px 8px;
+  position: relative;
+  backdrop-filter: blur(8px);
+}
+.card .name { font-weight: 700; color: #fff; margin-bottom: 2px; line-height: 1.3; white-space: nowrap; }
+.card .meta { color: var(--text-muted); line-height: 1.5; white-space: nowrap; }
+.card .meta b { color: #fff; font-weight: 600; }
+
+.l1 .card .name { font-size: 13px; color: var(--accent-blue); }
+.l1 .card .meta { font-size: 11px; }
+
+.l2 .card .name { font-size: 11px; }
+.l2 .card .meta { font-size: 10px; }
+
+.l3 .card .name { font-size: 10.5px; }
+.l3 .card .meta { font-size: 9.5px; }
+
+/* red */
+.card.red {
+  border-color: rgba(232,85,85,0.4);
+  background: rgba(232,85,85,0.1);
+}
+.card.red .name { color: var(--accent-red); }
+.card.red .meta b { color: var(--accent-red); }
+
+/* ===== Connector lines (CSS) ===== */
+.conn-col .vline {
+  position: absolute;
+  width: 1px;
+  background: var(--line);
+}
+/* vertical line from top card center to bottom card center in the NEXT column */
+.conn-col .vline.l2 {
+  left: 14px;
+  /* positioned per the L2 cards */
+}
+/* branch lines: horizontal from vline to card edge */
+.conn-col .hline {
+  position: absolute;
+  height: 1px;
+  background: var(--line);
+}
+</style>
+</head>
+<body>
+
+<div class="tree" id="tree">
+
+  <!-- L1 -->
+  <div class="level l1" id="l1">
+    <div class="card" id="c1">
+      <div class="name">个人客群规模净增</div>
+      <div class="meta">月目标 <b>60%</b>　完成 <b>44.5%</b></div>
+    </div>
+  </div>
+
+  <!-- Connector 1→2 -->
+  <div class="conn-col" id="conn1"></div>
+
+  <!-- L2 -->
+  <div class="level l2" id="l2">
+    <div class="card red" id="c2a">
+      <div class="name">新增份额</div>
+      <div class="meta">月目标 <b>70%</b>　完成 <b>50%</b></div>
+    </div>
+    <div class="card" id="c2b">
+      <div class="name">离网规模</div>
+      <div class="meta">月目标 <b>80%</b>　完成 <b>50%</b></div>
+    </div>
+  </div>
+
+  <!-- Connector 2→3 -->
+  <div class="conn-col" id="conn2"></div>
+
+  <!-- L3 -->
+  <div class="level l3" id="l3">
+    <div class="card red" id="c3a">
+      <div class="name">爱家套餐带卡率(%)</div>
+      <div class="meta">月目标 <b>90%</b>　完成 <b>20%</b></div>
+    </div>
+    <div class="card red" id="c3b">
+      <div class="name">到厅潜客转化率(%)</div>
+      <div class="meta">月目标 <b>90%</b>　完成 <b>20%</b></div>
+    </div>
+    <div class="card" id="c3c">
+      <div class="name">后向申销管控(户)</div>
+      <div class="meta">月目标 <b>15700</b>　完成 <b>7405</b></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const tree = document.getElementById('tree');
+  const treeRect = tree.getBoundingClientRect();
+
+  function cy(el) {
+    const r = el.getBoundingClientRect();
+    return r.top + r.height/2 - treeRect.top;
+  }
+  function cx(el) {
+    const r = el.getBoundingClientRect();
+    return r.left + r.width - treeRect.left;
+  }
+  function clx(el) {
+    const r = el.getBoundingClientRect();
+    return r.left - treeRect.left;
+  }
+
+  // Wait for layout
+  requestAnimationFrame(() => {
+    const c1 = document.getElementById('c1');
+    const c2a = document.getElementById('c2a');
+    const c2b = document.getElementById('c2b');
+    const c3a = document.getElementById('c3a');
+    const c3b = document.getElementById('c3b');
+    const c3c = document.getElementById('c3c');
+    const conn1 = document.getElementById('conn1');
+    const conn2 = document.getElementById('conn2');
+
+    const conn1Rect = conn1.getBoundingClientRect();
+    const conn1L = conn1Rect.left - treeRect.left;
+    const conn1R = conn1Rect.right - treeRect.left;
+    const conn2Rect = conn2.getBoundingClientRect();
+    const conn2L = conn2Rect.left - treeRect.left;
+    const conn2R = conn2Rect.right - treeRect.left;
+
+    const mid1 = (conn1L + conn1R) / 2;
+    const mid2 = (conn2L + conn2R) / 2;
+
+    const y1 = cy(c1);
+    const y2a = cy(c2a), y2b = cy(c2b);
+    const y3a = cy(c3a), y3b = cy(c3b), y3c = cy(c3c);
+
+    const x1r = cx(c1);
+    const x2aL = clx(c2a), x2bL = clx(c2b);
+    const x2aR = cx(c2a), x2bR = cx(c2b);
+    const x3aL = clx(c3a), x3bL = clx(c3b), x3cL = clx(c3c);
+
+    let html = '';
+
+    // L1→L2: horizontal from c1 right to mid1, then vertical spanning y1→y2b, then horizontal to L2 cards
+    const top1 = Math.min(y1, y2a, y2b);
+    const bot1 = Math.max(y1, y2a, y2b);
+    html += `<div style="position:absolute;left:${x1r}px;top:${y1}px;width:${mid1-x1r}px;height:1px;background:rgba(255,255,255,0.18);pointer-events:none;"></div>`;
+    html += `<div style="position:absolute;left:${mid1}px;top:${top1}px;width:1px;height:${bot1-top1}px;background:rgba(255,255,255,0.18);pointer-events:none;"></div>`;
+    html += `<div style="position:absolute;left:${mid1}px;top:${y2a}px;width:${x2aL-mid1}px;height:1px;background:rgba(255,255,255,0.18);pointer-events:none;"></div>`;
+    html += `<div style="position:absolute;left:${mid1}px;top:${y2b}px;width:${x2bL-mid1}px;height:1px;background:rgba(255,255,255,0.18);pointer-events:none;"></div>`;
+
+    // L2→L3
+    // 新增份额 → (c3a, c3b)
+    const top2a = Math.min(y2a, y3a, y3b);
+    const bot2a = Math.max(y2a, y3a, y3b);
+    html += `<div style="position:absolute;left:${x2aR}px;top:${y2a}px;width:${mid2-x2aR}px;height:1px;background:rgba(255,255,255,0.18);pointer-events:none;"></div>`;
+    html += `<div style="position:absolute;left:${mid2}px;top:${top2a}px;width:1px;height:${bot2a-top2a}px;background:rgba(255,255,255,0.18);pointer-events:none;"></div>`;
+    html += `<div style="position:absolute;left:${mid2}px;top:${y3a}px;width:${x3aL-mid2}px;height:1px;background:rgba(255,255,255,0.18);pointer-events:none;"></div>`;
+    html += `<div style="position:absolute;left:${mid2}px;top:${y3b}px;width:${x3bL-mid2}px;height:1px;background:rgba(255,255,255,0.18);pointer-events:none;"></div>`;
+
+    // 离网规模 → c3c
+    const top2b = Math.min(y2b, y3c);
+    const bot2b = Math.max(y2b, y3c);
+    if (Math.abs(y2b - y3c) > 2) {
+      html += `<div style="position:absolute;left:${x2bR}px;top:${y2b}px;width:${mid2-x2bR}px;height:1px;background:rgba(255,255,255,0.18);pointer-events:none;"></div>`;
+      html += `<div style="position:absolute;left:${mid2}px;top:${top2b}px;width:1px;height:${bot2b-top2b}px;background:rgba(255,255,255,0.18);pointer-events:none;"></div>`;
+      html += `<div style="position:absolute;left:${mid2}px;top:${y3c}px;width:${x3cL-mid2}px;height:1px;background:rgba(255,255,255,0.18);pointer-events:none;"></div>`;
+    } else {
+      html += `<div style="position:absolute;left:${x2bR}px;top:${y2b}px;width:${x3cL-x2bR}px;height:1px;background:rgba(255,255,255,0.18);pointer-events:none;"></div>`;
+    }
+
+    tree.insertAdjacentHTML('beforeend', html);
+  });
+})();
+</script>
+
+</body>
+</html>
